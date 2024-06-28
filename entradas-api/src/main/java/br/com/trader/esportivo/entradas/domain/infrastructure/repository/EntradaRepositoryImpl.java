@@ -22,7 +22,6 @@ import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.criteria.Expression;
 import javax.persistence.criteria.Fetch;
 import javax.persistence.criteria.Join;
-import javax.persistence.criteria.Order;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
@@ -44,6 +43,7 @@ import br.com.trader.esportivo.entradas.domain.model.Entrada_;
 import br.com.trader.esportivo.entradas.domain.model.Metodo;
 import br.com.trader.esportivo.entradas.domain.model.Metodo_;
 import br.com.trader.esportivo.entradas.domain.model.Time;
+import br.com.trader.esportivo.entradas.domain.model.dto.DadosGraficoDTO;
 import br.com.trader.esportivo.entradas.domain.model.dto.EntradaCampeonatoDTO;
 import br.com.trader.esportivo.entradas.domain.model.dto.EntradaDTOConsulta;
 import br.com.trader.esportivo.entradas.domain.model.dto.EntradaDTODatas;
@@ -580,7 +580,33 @@ public class EntradaRepositoryImpl implements CustomEntradaRepository {
 			dto.setValorBanca(buscarValorBanca(bancaId));
 		}
 		
+		preencherDadosGraficoEvolucaoBanca(filter, bancaId, dto);
 		return dto;
+	}
+
+	private void preencherDadosGraficoEvolucaoBanca(EstatisticasFilter filter, Long bancaId, EntradaDadosGeraisDTO dto) {
+		var cb = this.manager.getCriteriaBuilder();
+		var query = cb.createQuery(DadosGraficoDTO.class);
+		var root = query.from(Entrada.class);
+		
+		Join<Entrada, Metodo> joinMetodo = root.join(Entrada_.metodo);
+		Join<Metodo, Banca> joinBanca = joinMetodo.join(Metodo_.banca);
+		
+		Expression<LocalDate> data = root.get(Entrada_.data).as(LocalDate.class);
+		
+		var predicates = new ArrayList<>();
+		predicates.add(cb.between(data, filter.getDataInicio(), filter.getDataFim()));
+		predicates.add(cb.equal(joinBanca.get(Banca_.id), bancaId));
+
+		query.select(cb.construct(DadosGraficoDTO.class, 
+				data, 
+				cb.sum(root.get(Entrada_.lucroPrejuizo))));
+		
+		query.groupBy(data)
+			.orderBy(cb.asc(data))
+			.where(predicates.toArray(new Predicate[0]));
+		
+		dto.setDadosGrafico(this.manager.createQuery(query).getResultList());
 	}
 
 	private BigDecimal buscarValorBanca(Long bancaId) {

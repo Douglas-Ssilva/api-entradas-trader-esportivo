@@ -1,6 +1,7 @@
 package br.com.trader.esportivo.entradas.domain.model.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Objects;
 
 import br.com.trader.esportivo.entradas.api.helper.EntradaUtils;
@@ -19,6 +20,8 @@ public class EntradaDadosGeraisDTO {
 	
 	private BigDecimal percentualBanca = BigDecimal.ZERO;
 	
+	private List<DadosGraficoDTO> dadosGrafico;
+	
 	public EntradaDadosGeraisDTO(Long totalApostas, BigDecimal lucroPrejuizo, BigDecimal valorBanca) {
 		super();
 		this.totalApostas = totalApostas;
@@ -29,5 +32,4 @@ public class EntradaDadosGeraisDTO {
 		}
 	}
 	
-
 }
