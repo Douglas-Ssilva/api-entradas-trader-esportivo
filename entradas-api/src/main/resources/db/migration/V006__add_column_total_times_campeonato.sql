@@ -1,0 +1,1 @@
+ALTER TABLE CAMPEONATO ADD COLUMN total_times int;

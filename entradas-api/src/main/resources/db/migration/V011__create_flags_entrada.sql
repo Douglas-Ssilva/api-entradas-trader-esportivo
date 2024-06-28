@@ -1,0 +1,2 @@
+ALTER TABLE ENTRADA ADD COLUMN aposta_favor_mandante BOOLEAN;
+ALTER TABLE ENTRADA ADD COLUMN aposta_favor_visitante BOOLEAN; 

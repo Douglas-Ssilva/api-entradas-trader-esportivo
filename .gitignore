@@ -1,0 +1,24 @@
+.metadata
+
+HELP.md
+entradas-api/target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+entradas-api/.apt_generated
+entradas-api/.apt_generated_tests
+entradas-api/.mvn
+entradas-api/.classpath
+entradas-api/.factorypath
+entradas-api/.project
+entradas-api/.settings
+entradas-api/.springBeans
+entradas-api/.sts4-cache
+entradas-api/.gitignore
+entradas-api/src/main/resources/application.properties
+entradas-api/src/main/resources/application-development.properties
+entradas-api/src/main/resources/application-production.properties
+entradas-api/src/main/resources/todo.txt
+
