@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -44,10 +45,10 @@ public class EntradaController {
 	
 	
 	@GetMapping
-	public Page<EntradaDTO> findAll(@PathVariable Long bancaId, @PageableDefault(size = 5) Pageable pageable) {
-		Page<Entrada> pageEntradas = this.entradaService.findAll(EntradaSpecs.usandoFiltro(bancaId), pageable);
+	public Page<EntradaDTO> findAll(@PathVariable Long bancaId, @RequestParam(required = false) Long metodoId, @PageableDefault(size = 5) Pageable pageable) {
+		Page<Entrada> pageEntradas = this.entradaService.findAll(EntradaSpecs.usandoFiltro(bancaId, metodoId), pageable);
 		List<EntradaDTO> metodosDTO = this.assembler.toCollectionModel(pageEntradas.getContent());
-		return new PageImpl<>(metodosDTO, pageable, pageEntradas.getTotalElements());
+		return new PageImpl<>(metodosDTO, pageable, pageEntradas.getTotalElements()); 
 	}
 	
 	@GetMapping("/{entradaId}")

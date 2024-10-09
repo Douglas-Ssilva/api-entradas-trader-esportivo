@@ -13,7 +13,7 @@ import lombok.Setter;
 @NomesValidation
 public class TimeInputDTO extends NomeInputDTO {
 	
-	@NotNull
+//	@NotNull
 	private PaisEnum pais;
 
 	@NotNull

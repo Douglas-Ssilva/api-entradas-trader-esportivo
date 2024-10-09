@@ -1,6 +1,7 @@
 package br.com.trader.esportivo.entradas.domain.infrastructure.spec;
 
 import java.util.ArrayList;
+import static java.util.Objects.nonNull;
 
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.Predicate;
@@ -16,12 +17,15 @@ import br.com.trader.esportivo.entradas.domain.model.Metodo_;
 
 public class EntradaSpecs {
 	
-	public static Specification<Entrada> usandoFiltro(Long bancaId) {
+	public static Specification<Entrada> usandoFiltro(Long bancaId, Long metodoId) {
 		return (root, query, builder) -> {
 			var predicates = new ArrayList<>();
 			Join<Entrada, Metodo> joinMetodo = root.join(Entrada_.metodo);
 			Join<Metodo, Banca> joinBanca = joinMetodo.join(Metodo_.banca);
 			predicates.add(builder.equal(joinBanca.get(Banca_.id), bancaId));
+			if(nonNull(metodoId)) {
+				predicates.add(builder.equal(joinMetodo.get(Metodo_.id), metodoId));
+			}
 			query.orderBy(builder.desc(root.get(Entrada_.data)));
 			return builder.and(predicates.toArray(new Predicate[0]));
 		};

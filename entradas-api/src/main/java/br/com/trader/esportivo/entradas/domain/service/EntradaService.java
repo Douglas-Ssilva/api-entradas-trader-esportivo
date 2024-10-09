@@ -46,13 +46,13 @@ public class EntradaService {
 	@Transactional
 	public void save(List<Entrada> entradas, Long bancaId) {
 //		this.repository.detach(entrada.getMetodo());
-		var mandante = this.timeService.findById(entradas.get(0).getMandanteIdentificador());
-		var visitante = this.timeService.findById(entradas.get(0).getVisitanteIdentificador());
-		var campeonato = this.campeonatoService.findById(entradas.get(0).getCampeonato().getId());
 		var banca = this.bancaService.findById(bancaId);
-		validarRegras(mandante, visitante, entradas.get(0).getCampeonato());
 		
 		entradas.forEach(entrada -> {
+			var mandante = this.timeService.findById(entrada.getMandanteIdentificador());
+			var visitante = this.timeService.findById(entrada.getVisitanteIdentificador());
+			var campeonato = this.campeonatoService.findById(entrada.getCampeonato().getId());
+			validarRegras(mandante, visitante, campeonato);
 			var metodo = this.metodoService.findById(entrada.getMetodo().getId(), bancaId);
 			entrada.setMetodo(metodo);
 			entrada.setCampeonato(campeonato);

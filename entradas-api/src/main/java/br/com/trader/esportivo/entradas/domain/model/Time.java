@@ -43,14 +43,14 @@ public class Time implements Serializable { //Serializable por causa do Serializ
 	@Size(min = 3, max = 100)
 	private String nome;
 	
-	@NotNull
+//	@NotNull
 	@Enumerated(EnumType.STRING)
 	@Column(name = "pais_enum", length = 50, nullable = false)
 	private PaisEnum pais;
 
 	@NotNull
 	@Enumerated(EnumType.STRING)
-	@Column(name = "continente_enum", length = 50, nullable = false)
+	@Column(name = "continente_enum", length = 50, nullable = true)
 	private ContinenteEnum continente;
 	
 	@UpdateTimestamp
