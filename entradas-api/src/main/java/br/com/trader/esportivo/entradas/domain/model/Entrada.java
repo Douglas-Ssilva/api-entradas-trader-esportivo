@@ -49,11 +49,12 @@ public class Entrada implements Serializable { //Serializable por causa do Seria
 		this.lucroPrejuizo = lucroPrejuizo;
 	}
 	
-	public Entrada(Long metodoId, BigDecimal correcao) {
+	public Entrada(Long metodoId, BigDecimal correcaoPositiva, BigDecimal correcaoNegativa) {
 		super();
+		this.correcaoPositiva = correcaoPositiva;
+		this.correcaoNegativa = correcaoNegativa;
 		this.metodo = new Metodo();
 		this.metodo.setId(metodoId);
-		this.correcao = correcao;
 	}
 
 	@Id
@@ -107,28 +108,31 @@ public class Entrada implements Serializable { //Serializable por causa do Seria
 	private Metodo metodo;
 	
 	@Column(name = "aposta_favor_mandante")
-	private Boolean apostaAFavorMandante;
+	private Boolean apostaAFavorMandante = false;
 	
 	@Column(name = "aposta_favor_visitante")
-	private Boolean apostaAFavorVisitante;
+	private Boolean apostaAFavorVisitante = false;
 	
 	@Column(name = "red_card")
-	private Boolean redCard;
+	private Boolean redCard = false;
 	
 	@Column(name = "gol_favor")
-	private Boolean golAFavor;
+	private Boolean golAFavor = false;
 	
 	@Column(name = "gol_contra")
-	private Boolean golContra;
+	private Boolean golContra = false;
 	
 	@Column(name = "mais_gols_favor")
-	private Boolean maisGolsFavor;
+	private Boolean maisGolsFavor = false;
 	
 	@Column(name = "mais_gols_contra")
-	private Boolean maisGolsContra;
+	private Boolean maisGolsContra = false;
 	
 	@Transient
-	private BigDecimal correcao;
+	private BigDecimal correcaoPositiva;
+	
+	@Transient
+	private BigDecimal correcaoNegativa;
 	
 //	@Transient
 //	private BigDecimal valorGolFavor;

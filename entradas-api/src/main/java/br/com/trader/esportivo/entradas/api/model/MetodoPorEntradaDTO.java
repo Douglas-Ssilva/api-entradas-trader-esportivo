@@ -29,7 +29,9 @@ public class MetodoPorEntradaDTO {
 	
 	private Long redCard;
 	
-	private BigDecimal correcao;
+	private BigDecimal correcaoPositiva = BigDecimal.ZERO;
+	
+	private BigDecimal correcaoNegativa = BigDecimal.ZERO;
 	
 	private BigDecimal totalGolsFavor;	
 

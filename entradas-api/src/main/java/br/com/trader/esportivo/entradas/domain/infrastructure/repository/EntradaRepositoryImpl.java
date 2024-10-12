@@ -18,6 +18,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.criteria.Expression;
 import javax.persistence.criteria.Fetch;
@@ -25,6 +26,7 @@ import javax.persistence.criteria.Join;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Subquery;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -316,22 +318,22 @@ public class EntradaRepositoryImpl implements CustomEntradaRepository {
 		Predicate predicateBanca = cb.equal(joinBanca.get(Banca_.id), bancaId);
 		Predicate predicateData = cb.between(data, filter.getDataInicio(), filter.getDataFim());
 		Predicate predicateMetodo = joinMetodo.get(Metodo_.id).in(metodos.stream().map(MetodoPorEntradaDTO::getId).collect(Collectors.toList()));
-		
-		Predicate predicateRedCard = cb.or(cb.notEqual(root.get(Entrada_.redCard), Boolean.TRUE), root.get(Entrada_.redCard).isNull());
-		Predicate predicateGolFavor = cb.or(cb.notEqual(root.get(Entrada_.golAFavor), Boolean.TRUE), root.get(Entrada_.golAFavor).isNull());
-		Predicate predicateGolContra = cb.or(cb.notEqual(root.get(Entrada_.golContra), Boolean.TRUE), root.get(Entrada_.golContra).isNull());		
-		
+//		Predicate predicateRedCard = cb.or(cb.notEqual(root.get(Entrada_.redCard), Boolean.TRUE), root.get(Entrada_.redCard).isNull());
+		Predicate predicateGolFavor = cb.equal(root.get(Entrada_.golAFavor), Boolean.FALSE);
+		Predicate predicateGolContra = cb.equal(root.get(Entrada_.golContra), Boolean.FALSE);		
 		Predicate predicateMaisGolContraFavor = cb.and(cb.equal(root.get(Entrada_.maisGolsContra), Boolean.FALSE), cb.equal(root.get(Entrada_.maisGolsFavor), Boolean.FALSE));
-		Predicate predicateGolFavorTrue = cb.and(cb.equal(root.get(Entrada_.golAFavor), Boolean.TRUE), cb.equal(root.get(Entrada_.golContra), Boolean.TRUE));
+//		Predicate predicateGolFavorTrue = cb.and(cb.equal(root.get(Entrada_.golAFavor), Boolean.TRUE), cb.equal(root.get(Entrada_.golContra), Boolean.TRUE));
+		Predicate predicateGolContraFavorFinal = cb.and(predicateBanca, predicateData, predicateMetodo, predicateGolContra, predicateGolFavor, predicateMaisGolContraFavor);
+//		Predicate predicateFinalMaisGolContraFavorFinal = cb.and(predicateMaisGolContraFavor);
 		
-		Predicate predicateGolContraFavorFinal = cb.and(predicateBanca, predicateData, predicateMetodo, predicateGolContra, predicateGolFavor, predicateRedCard);
-		Predicate predicateFinalMaisGolContraFavorFinal = cb.and(predicateMaisGolContraFavor, predicateGolFavorTrue);
+		Subquery<BigDecimal> subqueryCorrecaoPositiva = montarSubQueryCorrecaoPositiva(bancaId, filter, cb, query, root, joinMetodo);
+		Subquery<BigDecimal> subqueryCorrecaoNegativa = montarSubQueryCorrecaoNegativa(bancaId, filter, cb, query, root, joinMetodo);
 		
 		query.select(cb.construct(Entrada.class, 
 				joinMetodo.get(Metodo_.id),
-				cb.sum(root.get(Entrada_.lucroPrejuizo))));
+				subqueryCorrecaoPositiva, subqueryCorrecaoNegativa ));
 		
-		query.groupBy(joinMetodo.get(Metodo_.id)).where(cb.or(predicateGolContraFavorFinal, predicateFinalMaisGolContraFavorFinal));
+		query.groupBy(joinMetodo.get(Metodo_.id)).where(cb.or(predicateGolContraFavorFinal));
 		
 		TypedQuery<Entrada> typedQuery = this.manager.createQuery(query);
 		List<Entrada> list = typedQuery.getResultList();
@@ -343,10 +345,53 @@ public class EntradaRepositoryImpl implements CustomEntradaRepository {
 						.findFirst();
 				
 				if(objOP.isPresent()){
-					metodo.setCorrecao(objOP.get().getCorrecao());
+					metodo.setCorrecaoPositiva(objOP.get().getCorrecaoPositiva());
+					metodo.setCorrecaoNegativa(objOP.get().getCorrecaoNegativa());
 				}
 			}
 		});
+	}
+
+	private Subquery<BigDecimal> montarSubQueryCorrecaoPositiva(Long bancaId, EstatisticasFilter filter,
+			CriteriaBuilder cb, CriteriaQuery<Entrada> query, Root<Entrada> root, Join<Entrada, Metodo> joinMetodo) {
+		Subquery<BigDecimal> subqueryCorrecaoPositiva = query.subquery(BigDecimal.class);
+		Root<Entrada> rootSubQuery = subqueryCorrecaoPositiva.from(Entrada.class);
+		Join<Entrada, Metodo> joinMetodoSubQuery = rootSubQuery.join(Entrada_.metodo);
+		Join<Metodo, Banca> joinBancaSubQuery = joinMetodoSubQuery.join(Metodo_.banca);
+
+		subqueryCorrecaoPositiva.select(cb.sum(rootSubQuery.get(Entrada_.lucroPrejuizo)))
+			.where(
+					cb.equal(joinBancaSubQuery.get(Banca_.id), bancaId), 
+				    cb.between(rootSubQuery.get(Entrada_.data).as(LocalDate.class), filter.getDataInicio(), filter.getDataFim()),
+				    cb.equal(joinMetodoSubQuery, joinMetodo),
+				    cb.greaterThanOrEqualTo(rootSubQuery.get(Entrada_.lucroPrejuizo), BigDecimal.ZERO), 
+				    cb.equal(rootSubQuery.get(Entrada_.golAFavor), Boolean.FALSE),
+				    cb.equal(rootSubQuery.get(Entrada_.golContra), Boolean.FALSE),
+				    cb.equal(rootSubQuery.get(Entrada_.maisGolsContra), Boolean.FALSE), 
+				    cb.equal(rootSubQuery.get(Entrada_.maisGolsFavor), Boolean.FALSE))
+			.groupBy(joinMetodo.get(Metodo_.id));
+		return subqueryCorrecaoPositiva;
+	}
+	
+	private Subquery<BigDecimal> montarSubQueryCorrecaoNegativa(Long bancaId, EstatisticasFilter filter,
+			CriteriaBuilder cb, CriteriaQuery<Entrada> query, Root<Entrada> root, Join<Entrada, Metodo> joinMetodo) {
+		Subquery<BigDecimal> subqueryCorrecaoPositiva = query.subquery(BigDecimal.class);
+		Root<Entrada> rootSubQuery = subqueryCorrecaoPositiva.from(Entrada.class);
+		Join<Entrada, Metodo> joinMetodoSubQuery = rootSubQuery.join(Entrada_.metodo);
+		Join<Metodo, Banca> joinBancaSubQuery = joinMetodoSubQuery.join(Metodo_.banca);
+		
+		subqueryCorrecaoPositiva.select(cb.sum(rootSubQuery.get(Entrada_.lucroPrejuizo)))
+		.where(
+				cb.equal(joinBancaSubQuery.get(Banca_.id), bancaId), 
+				cb.between(rootSubQuery.get(Entrada_.data).as(LocalDate.class), filter.getDataInicio(), filter.getDataFim()),
+				cb.equal(joinMetodoSubQuery, joinMetodo),
+				cb.lessThan(rootSubQuery.get(Entrada_.lucroPrejuizo), BigDecimal.ZERO), 
+				cb.equal(rootSubQuery.get(Entrada_.golAFavor), Boolean.FALSE),
+				cb.equal(rootSubQuery.get(Entrada_.golContra), Boolean.FALSE),
+				cb.equal(rootSubQuery.get(Entrada_.maisGolsContra), Boolean.FALSE), 
+				cb.equal(rootSubQuery.get(Entrada_.maisGolsFavor), Boolean.FALSE))
+		.groupBy(joinMetodo.get(Metodo_.id));
+		return subqueryCorrecaoPositiva;
 	}
 
 	private void preencherGolsFavorContraAndRedCard(List<MetodoPorEntradaDTO> metodos, Long bancaId, EstatisticasFilter filter) {
