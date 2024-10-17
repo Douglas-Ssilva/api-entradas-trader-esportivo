@@ -14,33 +14,12 @@ import lombok.Setter;
 @JsonInclude(value = Include.NON_NULL)
 public class EntradaDTOConsulta {
 	
-
-	public EntradaDTOConsulta() {
-	}
-	
-	public EntradaDTOConsulta(String campeonato, BigDecimal total) {
-		this.campeonato = campeonato;
-		this.total = total;
-	}
-	
-	public EntradaDTOConsulta(BigDecimal total, String time, Long timeId) {
-		this.time = time;
-		this.total = total;
-		this.timeId = timeId;
-	}
-	
-	public EntradaDTOConsulta(String metodo, BigDecimal total, BigDecimal valorBanca, BigDecimal valorStake) {
-		this.metodo = metodo;
-		this.total = total;
-		this.percentualBanca = EntradaUtils.getPercent(total, valorBanca);
-		this.percentualStack = EntradaUtils.getPercent(total, valorStake);
-	}
 	
 	private Long timeId;
 
 	private String campeonato;
 
-	private String time;
+	private String nomeTime;
 
 	private String metodo;
 
@@ -50,4 +29,33 @@ public class EntradaDTOConsulta {
 
 	private BigDecimal percentualStack;
 
+	private Long totalEntradas;
+
+	public EntradaDTOConsulta() {
+	}
+	
+	public EntradaDTOConsulta(String campeonato, BigDecimal total) {
+		this.campeonato = campeonato;
+		this.total = total;
+	}
+	
+//	public EntradaDTOConsulta(BigDecimal total, String time, Long timeId) {
+//		this.time = time;
+//		this.total = total;
+//		this.timeId = timeId;
+//	}
+	
+	public EntradaDTOConsulta(BigDecimal total, Long totalEntradas, String time, Long timeId) {
+		this.nomeTime = time;
+		this.total = total;
+		this.timeId = timeId;
+		this.totalEntradas = totalEntradas;
+	}
+	
+	public EntradaDTOConsulta(String metodo, BigDecimal total, BigDecimal valorBanca, BigDecimal valorStake) {
+		this.metodo = metodo;
+		this.total = total;
+		this.percentualBanca = EntradaUtils.getPercent(total, valorBanca);
+		this.percentualStack = EntradaUtils.getPercent(total, valorStake);
+	}
 }

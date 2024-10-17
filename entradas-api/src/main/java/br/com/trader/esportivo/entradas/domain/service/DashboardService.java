@@ -42,12 +42,12 @@ public class DashboardService {
 		return this.repository.findMetodosMaisLucrativos(filter, bancaId);
 	}
 	
-	public Page<EntradaDTOConsulta> findTimesMaisLucrativosCasa(Long bancaId, Pageable pageable) {
-		return this.repository.findTimesMaisLucrativosCasa(bancaId, pageable);
+	public Page<EntradaDTOConsulta> findTimesMaisLucrativosCasa(Long bancaId, EstatisticasFilter filter, Pageable pageable) {
+		return this.repository.findTimesMaisLucrativosCasa(bancaId, filter, pageable);
 	}
 	
-	public Page<EntradaDTOConsulta> findTimesMaisLucrativosFora(Long bancaId, Pageable pageable) {
-		return this.repository.findTimesMaisLucrativosFora(bancaId, pageable);
+	public Page<EntradaDTOConsulta> findTimesMaisLucrativosFora(Long bancaId, EstatisticasFilter filter, Pageable pageable) {
+		return this.repository.findTimesMaisLucrativosFora(bancaId, filter, pageable);
 	}
 
 	public Page<MetodoPorEntradaDTO> findAllMetodosPorEntrada(Long bancaId , EstatisticasFilter filter, Pageable pageable) {

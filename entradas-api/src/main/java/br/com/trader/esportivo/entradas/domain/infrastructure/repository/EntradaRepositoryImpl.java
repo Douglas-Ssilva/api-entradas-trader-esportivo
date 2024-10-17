@@ -27,6 +27,7 @@ import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Subquery;
+import javax.persistence.metamodel.SingularAttribute;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -45,6 +46,7 @@ import br.com.trader.esportivo.entradas.domain.model.Entrada_;
 import br.com.trader.esportivo.entradas.domain.model.Metodo;
 import br.com.trader.esportivo.entradas.domain.model.Metodo_;
 import br.com.trader.esportivo.entradas.domain.model.Time;
+import br.com.trader.esportivo.entradas.domain.model.Time_;
 import br.com.trader.esportivo.entradas.domain.model.dto.DadosGraficoDTO;
 import br.com.trader.esportivo.entradas.domain.model.dto.EntradaCampeonatoDTO;
 import br.com.trader.esportivo.entradas.domain.model.dto.EntradaDTOConsulta;
@@ -184,7 +186,7 @@ public class EntradaRepositoryImpl implements CustomEntradaRepository {
 	}
 	
 	@Override
-	public Page<EntradaDTOConsulta> findTimesMaisLucrativosCasa(Long bancaId, Pageable pageable) {
+	public Page<EntradaDTOConsulta> findTimesMaisLucrativosCasa(Long bancaId, EstatisticasFilter filter, Pageable pageable) {
 		var cb = this.manager.getCriteriaBuilder();
 		var query = cb.createQuery(EntradaDTOConsulta.class);
 		var root = query.from(Entrada.class);
@@ -192,15 +194,19 @@ public class EntradaRepositoryImpl implements CustomEntradaRepository {
 		var predicates = new ArrayList<>();
 		Join<Entrada, Metodo> joinMetodo = root.join(Entrada_.metodo);
 		Join<Metodo, Banca> joinBanca = joinMetodo.join(Metodo_.banca);
+		Expression<LocalDate> data = root.get(Entrada_.data);
+		
+		predicates.add(cb.between(data, filter.getDataInicio(), filter.getDataFim()));
 		predicates.add(cb.equal(joinBanca.get(Banca_.id), bancaId));
 		predicates.add(cb.equal(root.get(Entrada_.apostaAFavorMandante), Boolean.TRUE));
 		
 		query.select(cb.construct(EntradaDTOConsulta.class, 
 				cb.sum(root.get(Entrada_.lucroPrejuizo)), 
-				root.get(Entrada_.TIME_MANDANTE),
-				root.get(Entrada_.MANDANTE_IDENTIFICADOR)));
+				cb.count(root),
+				root.get(Entrada_.timeMandante),
+				root.get(Entrada_.mandanteIdentificador)));
 		
-		query.groupBy(root.get(Entrada_.TIME_MANDANTE), root.get(Entrada_.MANDANTE_IDENTIFICADOR))
+		query.groupBy(root.get(Entrada_.timeMandante), root.get(Entrada_.mandanteIdentificador))
 			.orderBy(cb.desc(cb.sum(root.get(Entrada_.lucroPrejuizo))))
 			.where(predicates.toArray(new Predicate[0]));
 		
@@ -208,11 +214,11 @@ public class EntradaRepositoryImpl implements CustomEntradaRepository {
 		tratarPaginacao(pageable, typedQuery);
 		List<EntradaDTOConsulta> dtos = typedQuery.getResultList();
 		
-		return new PageImpl<>(dtos, pageable, buscarTotalRegistros(bancaId));
+		return new PageImpl<>(dtos, pageable, buscarTotalRegistros(bancaId, filter, Entrada_.apostaAFavorMandante, Entrada_.mandanteIdentificador));
 	}
 	
 	@Override
-	public Page<EntradaDTOConsulta> findTimesMaisLucrativosFora(Long bancaId, Pageable pageable) {
+	public Page<EntradaDTOConsulta> findTimesMaisLucrativosFora(Long bancaId, EstatisticasFilter filter, Pageable pageable) {
 		var cb = this.manager.getCriteriaBuilder();
 		var query = cb.createQuery(EntradaDTOConsulta.class);
 		var root = query.from(Entrada.class);
@@ -220,15 +226,19 @@ public class EntradaRepositoryImpl implements CustomEntradaRepository {
 		var predicates = new ArrayList<>();
 		Join<Entrada, Metodo> joinMetodo = root.join(Entrada_.metodo);
 		Join<Metodo, Banca> joinBanca = joinMetodo.join(Metodo_.banca);
+		Expression<LocalDate> data = root.get(Entrada_.data);
+		
+		predicates.add(cb.between(data, filter.getDataInicio(), filter.getDataFim()));
 		predicates.add(cb.equal(joinBanca.get(Banca_.id), bancaId));
 		predicates.add(cb.equal(root.get(Entrada_.apostaAFavorVisitante), Boolean.TRUE));
 		
 		query.select(cb.construct(EntradaDTOConsulta.class, 
 				cb.sum(root.get(Entrada_.lucroPrejuizo)), 
-				root.get(Entrada_.TIME_VISITANTE),
-				root.get(Entrada_.VISITANTE_IDENTIFICADOR)));
+				cb.count(root), 
+				root.get(Entrada_.timeVisitante),
+				root.get(Entrada_.visitanteIdentificador)));
 		
-		query.groupBy(root.get(Entrada_.TIME_VISITANTE), root.get(Entrada_.VISITANTE_IDENTIFICADOR))
+		query.groupBy(root.get(Entrada_.timeVisitante), root.get(Entrada_.visitanteIdentificador))
 			.orderBy(cb.desc(cb.sum(root.get(Entrada_.lucroPrejuizo))))
 			.where(predicates.toArray(new Predicate[0]));
 		
@@ -236,7 +246,7 @@ public class EntradaRepositoryImpl implements CustomEntradaRepository {
 		tratarPaginacao(pageable, typedQuery);
 		List<EntradaDTOConsulta> dtos = typedQuery.getResultList();
 		
-		return new PageImpl<>(dtos, pageable, buscarTotalRegistros(bancaId));
+		return new PageImpl<>(dtos, pageable, buscarTotalRegistros(bancaId, filter, Entrada_.apostaAFavorVisitante, Entrada_.visitanteIdentificador));
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -689,19 +699,22 @@ public class EntradaRepositoryImpl implements CustomEntradaRepository {
 		query.setMaxResults(size);
 	}
 	
-	private Long buscarTotalRegistros(Long bancaId) {
+	private Long buscarTotalRegistros(Long bancaId, EstatisticasFilter filter, SingularAttribute<Entrada, Boolean> flagApostaFavor, SingularAttribute<Entrada, Long> mandanteVisitante) {
 		var cb = this.manager.getCriteriaBuilder();
 		var query = cb.createQuery(Long.class);
 		var root = query.from(Entrada.class);
 
 		Join<Entrada, Metodo> joinMetodo = root.join(Entrada_.metodo);
 		Join<Metodo, Banca> joinBanca = joinMetodo.join(Metodo_.banca);
+		Expression<LocalDate> data = root.get(Entrada_.data);
+		
 		
 		var predicates = new LinkedList<Predicate>();
+		predicates.add(cb.between(data, filter.getDataInicio(), filter.getDataFim()));
 		predicates.add(cb.equal(joinBanca.get(Banca_.id), bancaId));
-		predicates.add(cb.equal(root.get(Entrada_.apostaAFavorMandante), Boolean.TRUE));
+		predicates.add(cb.equal(root.get(flagApostaFavor), Boolean.TRUE));
 		
-		query.select(cb.count(root))
+		query.select(cb.countDistinct(root.get(mandanteVisitante)))
 			.where(predicates.toArray(new Predicate[0]));
 		return this.manager.createQuery(query).getSingleResult();
 	}
@@ -756,6 +769,7 @@ public class EntradaRepositoryImpl implements CustomEntradaRepository {
 		this.manager.createQuery(update).executeUpdate();
 	}
 
+	
 	@Override
 	public Page<EntradaCampeonatoDTO> findCampeonatosLucrativos(EstatisticasFilter filter, Long bancaId, Pageable pageable) {
 		var cb = this.manager.getCriteriaBuilder();
@@ -771,15 +785,15 @@ public class EntradaRepositoryImpl implements CustomEntradaRepository {
 		var predicates = new ArrayList<>();
 		predicates.add(cb.between(data, filter.getDataInicio(), filter.getDataFim()));
 		predicates.add(cb.equal(joinBanca.get(Banca_.id), bancaId));
-
+		
 		query.select(cb.construct(EntradaCampeonatoDTO.class, 
 				joinCampeonato.get(Campeonato_.nome), 
 				cb.sum(root.get(Entrada_.lucroPrejuizo)),
 				cb.count(root)));
 		
 		query.groupBy(joinCampeonato.get(Campeonato_.nome))
-			.orderBy(cb.desc(cb.sum(root.get(Entrada_.lucroPrejuizo))))
-			.where(predicates.toArray(new Predicate[0]));
+		.orderBy(cb.desc(cb.sum(root.get(Entrada_.lucroPrejuizo))), cb.desc(cb.count(root)))
+		.where(predicates.toArray(new Predicate[0]));
 		
 		TypedQuery<EntradaCampeonatoDTO> typedQuery = this.manager.createQuery(query);
 		tratarPaginacao(pageable, typedQuery);

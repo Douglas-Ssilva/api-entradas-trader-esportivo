@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import br.com.trader.esportivo.entradas.api.model.EntradaTimeDTO;
 import br.com.trader.esportivo.entradas.api.model.MetodoPorEntradaDTO;
 import br.com.trader.esportivo.entradas.domain.model.Entrada;
 import br.com.trader.esportivo.entradas.domain.model.Metodo;
@@ -29,9 +30,9 @@ public interface CustomEntradaRepository {
 
 	List<EntradaDTOConsulta> findMetodosMaisLucrativos(EstatisticasFilter filter, Long bancaId);
 	
-	Page<EntradaDTOConsulta> findTimesMaisLucrativosCasa(Long bancaId, Pageable pageable);
+	Page<EntradaDTOConsulta> findTimesMaisLucrativosCasa(Long bancaId, EstatisticasFilter filter, Pageable pageable);
 	
-	Page<EntradaDTOConsulta> findTimesMaisLucrativosFora(Long bancaId, Pageable pageable);
+	Page<EntradaDTOConsulta> findTimesMaisLucrativosFora(Long bancaId, EstatisticasFilter filter, Pageable pageable);
 	
 	Page<MetodoPorEntradaDTO> findAllMetodosPorEntrada(Long bancaId, EstatisticasFilter filter, Pageable pageable);
 	
@@ -42,5 +43,5 @@ public interface CustomEntradaRepository {
 	void updateNomeTime(Time time);
 	
 	Page<EntradaCampeonatoDTO> findCampeonatosLucrativos(EstatisticasFilter filter, Long bancaId, Pageable pageable);
-
+	
 }

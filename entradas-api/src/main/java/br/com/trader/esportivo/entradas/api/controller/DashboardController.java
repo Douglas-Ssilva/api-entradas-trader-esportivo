@@ -70,13 +70,13 @@ public class DashboardController {
 	}
 	
 	@GetMapping("/times-mais-lucrativos-casa")
-	public Page<EntradaDTOConsulta> findTimesMaisLucrativosCasa(@PathVariable Long bancaId, @PageableDefault(size = 5) Pageable pageable) {
-		return this.dashboardService.findTimesMaisLucrativosCasa(bancaId, pageable);
+	public Page<EntradaDTOConsulta> findTimesMaisLucrativosCasa(@PathVariable Long bancaId, EstatisticasFilter filter, @PageableDefault(size = 5) Pageable pageable) {
+		return this.dashboardService.findTimesMaisLucrativosCasa(bancaId, filter, pageable);
 	}
 	
 	@GetMapping("/times-mais-lucrativos-fora")
-	public Page<EntradaDTOConsulta> findTimesMaisLucrativosFora(@PathVariable Long bancaId, @PageableDefault(size = 5) Pageable pageable) {
-		return this.dashboardService.findTimesMaisLucrativosFora(bancaId, pageable);
+	public Page<EntradaDTOConsulta> findTimesMaisLucrativosFora(@PathVariable Long bancaId, EstatisticasFilter filter, @PageableDefault(size = 5) Pageable pageable) {
+		return this.dashboardService.findTimesMaisLucrativosFora(bancaId, filter, pageable);
 	}
 
 	
